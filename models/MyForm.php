@@ -15,7 +15,7 @@ class MyForm extends Model
         return [
             [['name','email'],'required'],
             ['email','email','message'=>'Некорректный e-mail'],
-            [['file'],'file','extension'=>'jpg,png']
+            [['file'],'file','extensions'=>'jpg, png']
         ];
     }
 }

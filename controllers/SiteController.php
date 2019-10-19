@@ -130,13 +130,15 @@ class SiteController extends Controller
     }
     public function actionForm(){
         $form=new MyForm();
-        $name='';
-        $email='';
         if($form->load(Yii::$app->request->post()) && $form->validate()){
             $name=Html::encode($form->name);
             $email=Html::encode($form->email);
             $form->file=UploadedFile::getInstance($form,'file');
             $form->file->saveAs('photo/'.$form->file->baseName.'.'.$form->file->extension);
+        }else{
+
+            $name='';
+            $email='';
         }
         return $this->render('form',['form'=>$form,'name'=>$name,'email'=>$email]);
     }
