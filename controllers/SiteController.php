@@ -1,6 +1,7 @@
 <?php
 
 namespace app\controllers;
+use app\models\Comments;
 use yii\helpers\Html;
 use app\models\MyForm;
 use Yii;
@@ -138,5 +139,12 @@ class SiteController extends Controller
             $form->file->saveAs('photo/'.$form->file->baseName.'.'.$form->file->extension);
         }
         return $this->render('form',['form'=>$form,'name'=>$name,'email'=>$email]);
+    }
+    public  function actionComments(){
+        $comments=Comments::find()->all();
+        return $this->render(
+            'comments',
+            ['comments'=>$comments]
+        );
     }
 }
