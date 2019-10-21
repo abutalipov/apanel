@@ -158,4 +158,8 @@ class SiteController extends Controller
             ['comments'=>$comments,'pagination'=>$pagination]
         );
     }
+    public function actionUser(){
+        $user=Yii::$app->request->get('name');
+        return $this->render('user',['user'=>$user]);
+    }
 }
