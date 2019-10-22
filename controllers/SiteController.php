@@ -155,11 +155,13 @@ class SiteController extends Controller
             ->all();
         return $this->render(
             'comments',
-            ['comments'=>$comments,'pagination'=>$pagination]
+            ['comments'=>$comments,'pagination'=>$pagination,'name'=>Yii::$app->session->get('name')]
         );
     }
     public function actionUser(){
         $user=Yii::$app->request->get('name');
+        $session=Yii::$app->session;
+        $session->set('name',$user);
         return $this->render('user',['user'=>$user]);
     }
 }
