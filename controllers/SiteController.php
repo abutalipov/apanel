@@ -1,12 +1,16 @@
 <?php
 
 namespace app\controllers;
-use app\models\Comments;
+use app\models\PasswordResetRequestForm;
+use app\models\ResetPasswordForm;
+use app\models\SignupForm;
+use app\models\User;
+use yii\base\InvalidParamException;
 use yii\data\Pagination;
 use yii\helpers\Html;
-use app\models\MyForm;
 use Yii;
 use yii\filters\AccessControl;
+use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
@@ -68,28 +72,24 @@ class SiteController extends Controller
         return $this->render('index');
     }
 
-    /**
-     * Login action.
-     *
-     * @return Response|string
-     */
+    public function actionUser()
+    {
+        return $this->render('user');
+    }
     public function actionLogin()
     {
         if (!Yii::$app->user->isGuest) {
             return $this->goHome();
         }
-
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
             return $this->goBack();
         }
-
         $model->password = '';
         return $this->render('login', [
             'model' => $model,
         ]);
     }
-
     /**
      * Logout action.
      *
@@ -98,70 +98,69 @@ class SiteController extends Controller
     public function actionLogout()
     {
         Yii::$app->user->logout();
-
         return $this->goHome();
     }
-
-    /**
-     * Displays contact page.
-     *
-     * @return Response|string
-     */
-    public function actionContact()
+    public function actionSignup()
     {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
+        $model = new SignupForm();
 
-            return $this->refresh();
+        if ($model->load(Yii::$app->request->post())) {
+            if ($user = $model->signup()) {
+                if (Yii::$app->getUser()->login($user)) {
+                    return $this->goHome();
+                }
+            }
         }
-        return $this->render('contact', [
+
+        return $this->render('signup', [
+            'model' => $model,
+        ]);
+    }
+    /**
+     * Requests password reset.
+     *
+     * @return mixed
+     */
+    public function actionRequestPasswordReset()
+    {
+        $model = new PasswordResetRequestForm();
+
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+            if ($model->sendEmail()) {
+                Yii::$app->session->setFlash('success', 'Check your email for further instructions.');
+                return $this->goHome();
+            } else {
+                Yii::$app->session->setFlash('error', 'Sorry, we are unable to reset password for email provided.');
+            }
+        }
+
+        return $this->render('passwordResetRequestForm', [
             'model' => $model,
         ]);
     }
 
     /**
-     * Displays about page.
+     * Resets password.
      *
-     * @return string
+     * @param string $token
+     * @return mixed
+     * @throws BadRequestHttpException
      */
-    public function actionAbout()
+    public function actionResetPassword($token)
     {
-        return $this->render('about');
-    }
-    public function actionForm(){
-        $form=new MyForm();
-        if($form->load(Yii::$app->request->post()) && $form->validate()){
-            $name=Html::encode($form->name);
-            $email=Html::encode($form->email);
-            $form->file=UploadedFile::getInstance($form,'file');
-            $form->file->saveAs('photo/'.$form->file->baseName.'.'.$form->file->extension);
-        }else{
-
-            $name='';
-            $email='';
+        try {
+            $model = new ResetPasswordForm($token);
+        } catch (InvalidParamException $e) {
+            throw new BadRequestHttpException($e->getMessage());
         }
-        return $this->render('form',['form'=>$form,'name'=>$name,'email'=>$email]);
-    }
-    public  function actionComments(){
-        $comments=Comments::find();
-        $pagination = new Pagination([
-            'defaultPageSize'=>2,
-            'totalCount'=>$comments->count()
-        ]);
-        $comments=$comments
-            ->offset($pagination->offset)
-            ->limit($pagination->limit)
-            ->all();
-        return $this->render(
-            'comments',
-            ['comments'=>$comments,'pagination'=>$pagination,'name'=>Yii::$app->session->get('name')]
-        );
-    }
-    public function actionUser(){
-        $user=Yii::$app->request->get('name');
-        $session=Yii::$app->session;
-        $session->set('name',$user);
-        return $this->render('user',['user'=>$user]);
-    }
+
+        if ($model->load(Yii::$app->request->post()) && $model->validate() && $model->resetPassword()) {
+            Yii::$app->session->setFlash('success', 'New password was saved.');
+            return $this->goHome();
+        }
+
+        return $this->render('resetPassword', [
+            'model' => $model,
+    ]);
+      }
 }
